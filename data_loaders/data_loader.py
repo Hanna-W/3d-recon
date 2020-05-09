@@ -8,10 +8,22 @@ from random import shuffle
 from random import choice
 import tensorflow as tf
 from data_loaders.util import batch
-dir_path = os.path.dirname(os.path.realpath(__file__))
+dir_path = os.path.dirname(os.path.realpath(__file__))#获取目标文件所在的绝对位置
 
 SHAPENET_VOX_PATH = os.path.join(dir_path, "..", "ShapeNetVox32")
 
+'''
+StreamingValDataLoader类
+主要函数：_fname_to_vox_：由键值提取3D位素数据
+         _fname_to_pose_：由键值提取位姿图像数据
+         _fname_to_img_：由键值和文件位置提取图像数据
+         _call_:生成迭代器
+         _len_：返回img的维度
+         _init_:初始化成员，提取图像，位姿图片和位素数据，并生成新的数据集
+主要属性：self.pose_info：包含键值和对应位姿图
+         self.imgs：包含数据文件绝对位置和位姿键值
+         fname:键值
+'''
 # Streaming into the memory.
 class StreamingValDataLoader(object):
 
@@ -19,16 +31,17 @@ class StreamingValDataLoader(object):
         self.shape = shape[:3]
         self.viewpoints = viewpoints
         self.binarize_data = binarize_data
-
-        self.pose_info = {}
-        self.imgs = []
+        
+        #导入位姿图片
+        self.pose_info = {}#包含键值和对应位姿图
+        self.imgs = []#包含数据绝对位置和位姿键值
         for data_dir in data_settings:
-            pose_info = json.load(open(os.path.join(data_dir, "pose_info.json")))
-            self.pose_info.update(pose_info)
+            pose_info = json.load(open(os.path.join(data_dir, "pose_info.json")))#把json对象转换为python对象
+            self.pose_info.update(pose_info)#更新位姿图像字典的内容
             self.imgs += [(data_dir, fname) for fname in pose_info.keys()]
 
         def _gen_():
-            shuffle(self.imgs)
+            shuffle(self.imgs)#将序列的所有元素随机排序
             for data_dir, fname in self.imgs:
                 vox = self._fname_to_vox_(fname).astype(np.float32)
                 pose = self._fname_to_pose_(fname).astype(np.float32)
@@ -37,8 +50,9 @@ class StreamingValDataLoader(object):
                     "image" : img,
                     "vox"   : vox,
                     "pose"  : pose
-                }
-
+                }#返回参数
+                
+        #生成数据集（包括图片，位姿图和3D位素），tf.data.Dataset.from_generator的标准用法（与gen搭配）
         self.dataset = tf.data.Dataset.from_generator(
             _gen_, {
                 "image" : tf.float32,
@@ -68,7 +82,8 @@ class StreamingValDataLoader(object):
         return ret
 
     def _fname_to_img_(self, data_dir, fname):
-        img = cv2.imread(os.path.join(data_dir, fname), 0)[..., np.newaxis].astype(np.float32)
+        img = cv2.imread(os.path.join(data_dir, fname), 0)[..., np.newaxis].astype(np.float32)#以灰度模式加载图片，并增加维度
+        #是否二进制化数据
         if self.binarize_data:
             img = (img > 0).astype(np.float32) * 255
         img /= 255.
@@ -145,7 +160,7 @@ class StreamingSplitDataLoader(object):
             while True:
                 shuffle(self.modelid_withpose)
                 for mid in self.modelid_withpose:
-                    i, j = choice(self.vp_pairs)
+                    i, j = choice(self.vp_pairs)#随机选择一组vp对
                     fname_i, fname_j = self.models[mid][i], self.models[mid][j]
                     img_i, img_j = self._fname_to_img_(fname_i), self._fname_to_img_(fname_j)
                     pos_i, pos_j = self._fname_to_pose_(fname_i), self._fname_to_pose_(fname_j)
@@ -166,7 +181,7 @@ class StreamingSplitDataLoader(object):
             }).repeat().shuffle(max(1, len(self.modelid_withpose))) # TODO: magic number
 
         def _gen_gan_():
-            while True:
+            while True:#？？
                 shuffle(self.modelid_nopose)
                 for mid in self.modelid_nopose:
                     for i in range(self.viewpoints):
