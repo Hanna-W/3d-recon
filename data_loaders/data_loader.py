@@ -97,6 +97,8 @@ class StreamingValDataLoader(object):
         return len(self.imgs)
 
 '''
+与上一个函数类似，将数据集分为有位姿监督和无位姿监督两个部分，
+同时生成编码器数据集（带位姿），和GAN数据集（不带位姿）
 '''
 class StreamingSplitDataLoader(object):
 
@@ -220,6 +222,9 @@ class StreamingSplitDataLoader(object):
         n_nopose = len(self.modelid_withpose)*len(self.vp_pairs)
         return n_pose, n_nopose
 
+'''
+
+'''
 class NoiseSampler(object):
     def __init__(self, use_normal=False):
         self.use_normal = use_normal
@@ -244,7 +249,9 @@ class MultiViewNoiseSampler(object):
             out[i,-1]  = -1 + 2./self.num_viewpoints*(i%self.num_viewpoints)
         return out.astype(np.float32)
 
-
+'''
+运行上述两个DataLoader，获取数据集
+'''
 if __name__ == "__main__":
     ds = StreamingValDataLoader(
             ["../data/airplanes_32x32alpha_perspective_d100_r32_vp24_discrete_PTN/train"],
