@@ -3,14 +3,14 @@ import tensorflow.contrib as tc
 class Encoder(object):
     """Model structure for the decoder, using the structure in PTN
     """
-    def __init__(self, cfg):
-        self.x_dim = [cfg.resolution, cfg.resolution, 1]
+    def __init__(self, cfg):0
+        self.x_dim = [cfg.resolution, cfg.resolution, 1]#输入图像数据大小
         self.name = 'encoder_net'
         self.has_use = False
 
-        self.dim = cfg.e_dim
-        self.ksize = cfg.e_ksize
-        self.out_dim = cfg.z_dim
+        self.dim = cfg.e_dim#滤波器大小
+        self.ksize = cfg.e_ksize#卷积核大小
+        self.out_dim = cfg.z_dim#编码器输出z的维度
         self.viewpoints = cfg.viewpoints
         self.use_tanh = cfg.use_tanh
         self.use_bn = cfg.encoder_use_bn
@@ -29,6 +29,7 @@ class Encoder(object):
                     x, filters, ksizes, strides, padding=padding, activation=activation)
 
     def __call__(self, x, is_training, reuse=None):
+        #共享变量
         with tf.variable_scope(self.name) as vs:
             if (reuse is None and self.has_use) or reuse:
                 vs.reuse_variables()
@@ -44,8 +45,8 @@ class Encoder(object):
                 padding='same',  activation=None
             )
             if self.use_bn:
-                conv1 = tf.layers.batch_normalization(conv1, training=is_training)
-            conv1 = tf.nn.relu(conv1)
+                conv1 = tf.layers.batch_normalization(conv1, training=is_training)#批归一化
+            conv1 = tf.nn.relu(conv1)#激活函数
             print("Conv1:%s"%conv1.get_shape()) # 16x16
 
             conv2 = self.conv2d(
@@ -65,15 +66,17 @@ class Encoder(object):
                 conv3 = tf.layers.batch_normalization(conv3, training=is_training)
             conv3 = tf.nn.relu(conv3)
             print("Conv3:%s"%conv3.get_shape()) # 4x4
-
+            
+            #池化
             if self.use_avg_pooling:
                 conv3 = tf.layers.average_pooling2d(conv3, [4, 4], [1, 1])
                 print("\tPooled:%s"%conv3.get_shape())
-
+            
+            #平铺，4*4*512
             flat = tf.reshape(conv3, tf.stack([conv3.get_shape()[0], -1]))
             print(flat.get_shape())
-
-            # Regress toward the noise
+    
+            # Regress toward the noise.前向传播全连接层
             if self.use_mlp:
                 fc_1_z = flat
                 for h_dim in self.mlp_hidden:
@@ -86,7 +89,8 @@ class Encoder(object):
                 flat_noise = fc_1_z
             else:
                 flat_noise = flat
-
+            
+            #输出层
             print("Noise output:%s"%flat_noise.get_shape())
             pred_noise = tc.layers.fully_connected(
                 flat_noise, self.out_dim,
@@ -94,7 +98,7 @@ class Encoder(object):
             if self.use_tanh:
                 pred_noise = tf.tanh(pred_noise)
 
-            # Output he logits
+            # Output he logits。输出logit模型
             if self.use_mlp:
                 fc_1_p = flat
                 for h_dim in self.mlp_hidden:
@@ -110,7 +114,7 @@ class Encoder(object):
             print("Pose output:%s"%flat_logits.get_shape())
             pred_logits = tc.layers.fully_connected(
                 flat_logits, self.viewpoints,
-                activation_fn=tf.identity)
+                activation_fn=tf.identity)#注意这里的是self.viewpoints,与pre_noise的不同
 
             print("Finished building encoders")
         self.has_use = True
