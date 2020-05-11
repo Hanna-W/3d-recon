@@ -57,7 +57,7 @@ class Discriminator(object):
             elif self.use_bn:
                 conv3 = tf.layers.batch_normalization(conv3, training=is_training)
             conv3 = leaky_relu(conv3)
-            flat = tf.reshape(conv3, tf.stack([conv3.get_shape()[0], -1]))
+            flat = tf.reshape(conv3, tf.stack([conv3.get_shape()[0], -1]))#-1表示自动计算所需列数
 
             out = tc.layers.fully_connected(
                 flat, 1,
