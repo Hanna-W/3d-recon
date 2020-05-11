@@ -9,7 +9,7 @@ class Generator(object):
         self.rotation_axis = cfg.rotation_axis
         assert self.rotation_axis in ['X', 'Y', 'Z', 'XYZ', "PTN"]
         self.vp_dim = 3 if self.rotation_axis in ['XYZ', 'PTN'] else 1
-        self.z_dim = cfg.z_dim + self.vp_dim
+        self.z_dim = cfg.z_dim + self.vp_dim#？？
         self.dim = cfg.g_dim
         self.ksize = cfg.g_ksize
         self.use_batch_norm = cfg.g_bn
@@ -59,7 +59,7 @@ class Generator(object):
                 [2, 2, 2], padding='same', activation=None
             )
             conv_vg3 = tf.sigmoid(conv_vg3)
-            conv_vg3 = conv_vg3[:,:,:,:,0]
+            conv_vg3 = conv_vg3[:,:,:,:,0]#32*32*32*1
 
             p = self.projector(conv_vg3, z[:,-self.vp_dim:])
 
