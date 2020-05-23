@@ -1,13 +1,13 @@
 import os
 import numpy as np
 import csv
-import argparse
+import argparse #命令行参数解析包，用来方便地读取命令行参数
 
-parser = argparse.ArgumentParser('')
-parser.add_argument('--prefix', type=str, default='chairs_pose0.5')
-parser.add_argument('--categories', type=str, nargs='+', help='Categories to evaluate.')
-args = parser.parse_args()
-print(args.categories)
+parser = argparse.ArgumentParser('') #生成一个参数解析器
+parser.add_argument('--prefix', type=str, default='chairs_pose0.5') #添加参数prefix，类型字符串，默认值‘chairs_pose0.5’
+parser.add_argument('--categories', type=str, nargs='+', help='Categories to evaluate.') #添加参数categories，类型字符串，nargs表示应该读取的命令行参数个数， + 号表示 1 或多个参数。
+args = parser.parse_args() #获取解析的参数
+print(args.categories) #打印解析的参数
 
 if args.categories is None:
     CATE = [
@@ -37,7 +37,8 @@ data_val = {}  # model -> category -> score
 data_test = {} # model -> category -> score
 
 ROOT = 'log/train_gan_cyc_encdec_randomvp/'
-for datasetting in os.listdir(ROOT):
+#返回ROOT路径下的文件夹包含的文件或文件夹的名字的列表
+for datasetting in os.listdir(ROOT): 
     if args.prefix not in datasetting:
         continue
     print(datasetting)
@@ -56,7 +57,7 @@ for datasetting in os.listdir(ROOT):
                 headers = None
                 for l in f:
                     if is_header:
-                        headers = l.strip().split()
+                        headers = l.strip().split() #移除字符串头尾指定的字符（默认为空格或换行符），然后以空格为界分割数据
                         is_header = False
                         continue
 
@@ -73,6 +74,7 @@ for datasetting in os.listdir(ROOT):
                                 data[key][cate]['iout05'] = row[4]
                             else: raise Exception("Invalid fname:%s"%fname)
 
+#创建一个results的结果输出文件夹
 out_dir = 'results'
 if not os.path.exists('results'):
     os.makedirs('results')
